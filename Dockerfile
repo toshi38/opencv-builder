@@ -7,7 +7,7 @@ RUN apt-get update \
     git libgtk2.0-dev pkg-config libavcodec-dev \
     libavformat-dev libswscale-dev python-dev \
     python-numpy libtbb2 libtbb-dev libjpeg-dev \
-    libpng-dev libtiff-dev libdc1394-22-dev
+    libpng-dev libtiff-dev libdc1394-22-dev unzip
 RUN mkdir -p /cmake/ \
     && cd /cmake/ \
     && wget -nc https://cmake.org/files/v3.10/cmake-3.10.2-Linux-x86_64.sh \
@@ -26,6 +26,16 @@ RUN cd /opencv/opencv-3.4.0 \
     && cmake -D CMAKE_BUILD_TYPE=RELEASE -D CMAKE_INSTALL_PREFIX=/usr/local .. \
     && make -j8 \
     && make install/strip
+#Install glm for use in projects compiled with this container.
+RUN mkdir -p /glm \
+    && cd /glm \
+    && wget -nc https://github.com/g-truc/glm/releases/download/0.9.8.5/glm-0.9.8.5.zip \
+    && unzip glm-0.9.8.5.zip
+RUN cd /glm/glm \
+    && mkdir -p release \
+    && cd release \
+    && cmake ..
+
 
 # Create the actual image to use to build project
 #
@@ -41,7 +51,8 @@ RUN apt-get update \
 # Create target directories
 RUN mkdir -p /cmake/bin \
     && mkdir -p /cmake/share \
-    && mkdir -p /opencv/opencv-3.4.0
+    && mkdir -p /opencv/opencv-3.4.0 \
+    && mkdir -p /glm
 
 # Setup cmake from builder
 COPY --from=build /cmake/bin /cmake/bin
@@ -56,5 +67,8 @@ COPY --from=build /usr/local/bin/opencv* /usr/local/bin/
 COPY --from=build /usr/local/lib/libopencv* /usr/local/lib/
 COPY --from=build /usr/local/share/OpenCV /usr/local/share/OpenCV
 
-
-
+# Copy over and install glm from builder (header only so make is lightweight)
+COPY --from=build /glm/glm /glm/glm
+RUN cd /glm/glm/release && \
+  make -j8 && \
+  make install
