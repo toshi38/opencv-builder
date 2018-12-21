@@ -1,4 +1,4 @@
-FROM gcc:7.2.0 as build
+FROM gcc:7.3.0 as build
 
 # Install things required to build opencv:
 #
@@ -31,10 +31,6 @@ RUN mkdir -p /glm \
     && cd /glm \
     && wget -nc https://github.com/g-truc/glm/releases/download/0.9.8.5/glm-0.9.8.5.zip \
     && unzip glm-0.9.8.5.zip
-RUN cd /glm/glm \
-    && mkdir -p release \
-    && cd release \
-    && cmake ..
 
 
 # Create the actual image to use to build project
@@ -67,8 +63,3 @@ COPY --from=build /usr/local/bin/opencv* /usr/local/bin/
 COPY --from=build /usr/local/lib/libopencv* /usr/local/lib/
 COPY --from=build /usr/local/share/OpenCV /usr/local/share/OpenCV
 
-# Copy over and install glm from builder (header only so make is lightweight)
-COPY --from=build /glm/glm /glm/glm
-RUN cd /glm/glm/release && \
-  make -j8 && \
-  make install
